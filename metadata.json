@@ -1,0 +1,8 @@
+{
+  "name": "Aurelia Hospitality Cloud",
+  "description": "Live room status, hotel front desk operations, reservations, housekeeping dispatch, and integrated inventory management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
