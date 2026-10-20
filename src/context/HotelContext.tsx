@@ -16,6 +16,11 @@ import {
   MaintenanceTicket,
   PosProduct,
   WarehouseLocationId,
+  MenuCategoryItem,
+  MenuItem,
+  CreateRoomInput,
+  UpdateRoomInput,
+  RoomStatusHistoryEntry,
   Employee,
   StaffStatus
 } from '../types/index.ts';
@@ -42,6 +47,9 @@ interface HotelContextType {
   housekeepingTasks: HousekeepingTask[];
   maintenanceTickets: MaintenanceTicket[];
   posProducts: PosProduct[];
+  menuCategories: MenuCategoryItem[];
+  menuItems: MenuItem[];
+  roomStatusHistory: RoomStatusHistoryEntry[];
   consumptionLogs: any[];
   isLoading: boolean;
   toasts: ToastMessage[];
@@ -63,8 +71,8 @@ interface HotelContextType {
   };
 
   // Modals & Active Selections
-  activeTab: 'PMS_GRID' | 'INVENTORY' | 'POS' | 'HOUSEKEEPING' | 'BLUEPRINT' | 'STAFF';
-  setActiveTab: (tab: 'PMS_GRID' | 'INVENTORY' | 'POS' | 'HOUSEKEEPING' | 'BLUEPRINT' | 'STAFF') => void;
+  activeTab: 'PMS_GRID' | 'INVENTORY' | 'POS' | 'HOUSEKEEPING' | 'BLUEPRINT' | 'STAFF' | 'MENU_MANAGEMENT' | 'ROOM_MANAGEMENT';
+  setActiveTab: (tab: 'PMS_GRID' | 'INVENTORY' | 'POS' | 'HOUSEKEEPING' | 'BLUEPRINT' | 'STAFF' | 'MENU_MANAGEMENT' | 'ROOM_MANAGEMENT') => void;
   selectedRoom: Room | null;
   setSelectedRoom: (room: Room | null) => void;
   selectedInventoryItem: InventoryItem | null;
@@ -99,6 +107,20 @@ interface HotelContextType {
   folioModalBooking: Booking | null;
   openFolioModal: (booking: Booking) => void;
 
+  // Menu Management modals
+  isMenuCategoryModalOpen: boolean;
+  setIsMenuCategoryModalOpen: (open: boolean) => void;
+  isMenuItemModalOpen: boolean;
+  setIsMenuItemModalOpen: (open: boolean) => void;
+  editingMenuItem: MenuItem | null;
+  setEditingMenuItem: (item: MenuItem | null) => void;
+
+  // Room Management modals
+  isRoomModalOpen: boolean;
+  setIsRoomModalOpen: (open: boolean) => void;
+  editingRoom: Room | null;
+  setEditingRoom: (room: Room | null) => void;
+
   // Actions
   refreshAllData: () => Promise<void>;
   createBooking: (payload: any) => Promise<boolean>;
@@ -124,6 +146,18 @@ interface HotelContextType {
   resolveMaintenanceTicket: (id: string) => Promise<boolean>;
   createPurchaseOrder: (payload: any) => Promise<boolean>;
   transitionPOStatus: (poId: string, status: string, receiveQtyMap?: Record<string, number>) => Promise<boolean>;
+  // Menu Management actions
+  createMenuCategory: (payload: { name: string; description?: string; isActive?: boolean; sortOrder?: number }) => Promise<boolean>;
+  updateMenuCategory: (id: string, payload: Partial<Pick<MenuCategoryItem, 'name' | 'description' | 'isActive' | 'sortOrder'>>) => Promise<boolean>;
+  deleteMenuCategory: (id: string) => Promise<boolean>;
+  createMenuItem: (payload: Omit<MenuItem, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>;
+  updateMenuItem: (id: string, payload: Partial<Omit<MenuItem, 'id' | 'createdAt' | 'updatedAt'>>) => Promise<boolean>;
+  deleteMenuItem: (id: string) => Promise<boolean>;
+  // Room Management actions
+  createRoom: (payload: CreateRoomInput) => Promise<boolean>;
+  updateRoom: (id: string, payload: UpdateRoomInput) => Promise<boolean>;
+  deleteRoom: (id: string) => Promise<boolean>;
+  getRoomStatusHistory: (roomId: string) => RoomStatusHistoryEntry[];
   addToast: (toast: Omit<ToastMessage, 'id' | 'timestamp'>) => void;
   removeToast: (id: string) => void;
 }
@@ -140,12 +174,15 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [housekeepingTasks, setHousekeepingTasks] = useState<HousekeepingTask[]>([]);
   const [maintenanceTickets, setMaintenanceTickets] = useState<MaintenanceTicket[]>([]);
   const [posProducts, setPosProducts] = useState<PosProduct[]>([]);
+  const [menuCategories, setMenuCategories] = useState<MenuCategoryItem[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [roomStatusHistory, setRoomStatusHistory] = useState<RoomStatusHistoryEntry[]>([]);
   const [consumptionLogs, setConsumptionLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   // Navigation tab
-  const [activeTab, setActiveTab] = useState<'PMS_GRID' | 'INVENTORY' | 'POS' | 'HOUSEKEEPING' | 'BLUEPRINT' | 'STAFF'>('STAFF');
+  const [activeTab, setActiveTab] = useState<'PMS_GRID' | 'INVENTORY' | 'POS' | 'HOUSEKEEPING' | 'BLUEPRINT' | 'STAFF' | 'MENU_MANAGEMENT' | 'ROOM_MANAGEMENT'>('STAFF');
 
   // Staff State
   const [employees, setEmployees] = useState<Employee[]>(INITIAL_STAFF);
@@ -166,6 +203,15 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [maintenanceRoom, setMaintenanceRoom] = useState<Room | null>(null);
   const [isFolioModalOpen, setIsFolioModalOpen] = useState(false);
   const [folioModalBooking, setFolioModalBooking] = useState<Booking | null>(null);
+
+  // Menu Management modal state
+  const [isMenuCategoryModalOpen, setIsMenuCategoryModalOpen] = useState(false);
+  const [isMenuItemModalOpen, setIsMenuItemModalOpen] = useState(false);
+  const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
+
+  // Room Management modal state
+  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
   const addToast = useCallback((toast: Omit<ToastMessage, 'id' | 'timestamp'>) => {
     const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`;
@@ -241,6 +287,8 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         fetchedTasks,
         fetchedTickets,
         fetchedPOS,
+        fetchedMenuCategories,
+        fetchedMenuItems,
         fetchedLogs
       ] = await Promise.all([
         apiService.getRooms().catch(() => Array.from(db.rooms.values())),
@@ -257,6 +305,8 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         apiService.getHousekeepingTasks().catch(() => Array.from(db.housekeepingTasks.values())),
         apiService.getMaintenanceTickets().catch(() => Array.from(db.maintenanceTickets.values())),
         apiService.getPosProducts().catch(() => db.posProducts),
+        apiService.getMenuCategories().catch(() => Array.from(db.menuCategories.values())),
+        apiService.getMenuItems().catch(() => Array.from(db.menuItems.values())),
         apiService.getConsumptionLogs().catch(() => db.inventoryConsumptionLogs)
       ]);
 
@@ -270,6 +320,8 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setHousekeepingTasks(fetchedTasks);
       setMaintenanceTickets(fetchedTickets);
       setPosProducts(fetchedPOS);
+      setMenuCategories(fetchedMenuCategories);
+      setMenuItems(fetchedMenuItems);
       setConsumptionLogs(fetchedLogs);
     } catch (err: any) {
       console.warn('Network sync notice: Using synchronized in-memory database store.', err);
@@ -282,6 +334,8 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setHousekeepingTasks(Array.from(db.housekeepingTasks.values()));
       setMaintenanceTickets(Array.from(db.maintenanceTickets.values()));
       setPosProducts(db.posProducts);
+      setMenuCategories(Array.from(db.menuCategories.values()));
+      setMenuItems(Array.from(db.menuItems.values()));
       setConsumptionLogs(db.inventoryConsumptionLogs);
     } finally {
       setIsLoading(false);
@@ -335,6 +389,32 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const openFolioModal = (booking: Booking) => {
     setFolioModalBooking(booking);
     setIsFolioModalOpen(true);
+  };
+
+  // Menu Management modal triggers
+  const openMenuCategoryModal = () => {
+    setIsMenuCategoryModalOpen(true);
+  };
+  const closeMenuCategoryModal = () => {
+    setIsMenuCategoryModalOpen(false);
+  };
+  const openMenuItemModal = (item?: MenuItem) => {
+    setEditingMenuItem(item || null);
+    setIsMenuItemModalOpen(true);
+  };
+  const closeMenuItemModal = () => {
+    setIsMenuItemModalOpen(false);
+    setEditingMenuItem(null);
+  };
+
+  // Room Management modal triggers
+  const openRoomModal = (room?: Room) => {
+    setEditingRoom(room || null);
+    setIsRoomModalOpen(true);
+  };
+  const closeRoomModal = () => {
+    setIsRoomModalOpen(false);
+    setEditingRoom(null);
   };
 
   // -------------------------------------------------------------
@@ -665,6 +745,160 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  // ---------------- MENU CATEGORY ACTIONS ----------------
+
+  const handleCreateMenuCategory = async (payload: { name: string; description?: string; isActive?: boolean; sortOrder?: number }): Promise<boolean> => {
+    try {
+      try {
+        await apiService.createMenuCategory(payload);
+      } catch {
+        db.createMenuCategory(payload);
+      }
+      addToast({ type: 'success', title: 'Menu Category Created', message: `${payload.name} category added.` });
+      await refreshAllData();
+      return true;
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Category Creation Failed', message: err.message });
+      return false;
+    }
+  };
+
+  const handleUpdateMenuCategory = async (id: string, payload: Partial<Pick<MenuCategoryItem, 'name' | 'description' | 'isActive' | 'sortOrder'>>): Promise<boolean> => {
+    try {
+      try {
+        await apiService.updateMenuCategory(id, payload);
+      } catch {
+        db.updateMenuCategory(id, payload);
+      }
+      addToast({ type: 'success', title: 'Menu Category Updated', message: 'Category details saved.' });
+      await refreshAllData();
+      return true;
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Category Update Failed', message: err.message });
+      return false;
+    }
+  };
+
+  const handleDeleteMenuCategory = async (id: string): Promise<boolean> => {
+    try {
+      try {
+        await apiService.deleteMenuCategory(id);
+      } catch {
+        db.deleteMenuCategory(id);
+      }
+      addToast({ type: 'success', title: 'Menu Category Deleted', message: 'Category removed successfully.' });
+      await refreshAllData();
+      return true;
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Category Delete Failed', message: err.message });
+      return false;
+    }
+  };
+
+  // ---------------- MENU ITEM ACTIONS ----------------
+
+  const handleCreateMenuItem = async (payload: Omit<MenuItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<boolean> => {
+    try {
+      try {
+        await apiService.createMenuItem(payload);
+      } catch {
+        db.createMenuItem(payload);
+      }
+      addToast({ type: 'success', title: 'Menu Item Created', message: `${payload.name} added to the menu.` });
+      await refreshAllData();
+      return true;
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Item Creation Failed', message: err.message });
+      return false;
+    }
+  };
+
+  const handleUpdateMenuItem = async (id: string, payload: Partial<Omit<MenuItem, 'id' | 'createdAt' | 'updatedAt'>>): Promise<boolean> => {
+    try {
+      try {
+        await apiService.updateMenuItem(id, payload);
+      } catch {
+        db.updateMenuItem(id, payload);
+      }
+      addToast({ type: 'success', title: 'Menu Item Updated', message: 'Item details saved.' });
+      await refreshAllData();
+      return true;
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Item Update Failed', message: err.message });
+      return false;
+    }
+  };
+
+  const handleDeleteMenuItem = async (id: string): Promise<boolean> => {
+    try {
+      try {
+        await apiService.deleteMenuItem(id);
+      } catch {
+        db.deleteMenuItem(id);
+      }
+      addToast({ type: 'success', title: 'Menu Item Deleted', message: 'Item removed from the menu.' });
+      await refreshAllData();
+      return true;
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Item Delete Failed', message: err.message });
+      return false;
+    }
+  };
+
+  // ---------------- ROOM MANAGEMENT ACTIONS ----------------
+
+  const handleCreateRoom = async (payload: CreateRoomInput): Promise<boolean> => {
+    try {
+      try {
+        await apiService.createRoom(payload);
+      } catch {
+        db.createRoom(payload);
+      }
+      addToast({ type: 'success', title: 'Room Created', message: `Room ${payload.roomNumber} added to the property.` });
+      await refreshAllData();
+      return true;
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Room Creation Failed', message: err.message });
+      return false;
+    }
+  };
+
+  const handleUpdateRoom = async (id: string, payload: UpdateRoomInput): Promise<boolean> => {
+    try {
+      try {
+        await apiService.updateRoom(id, payload);
+      } catch {
+        db.updateRoom(id, payload);
+      }
+      addToast({ type: 'success', title: 'Room Updated', message: 'Room details saved.' });
+      await refreshAllData();
+      return true;
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Room Update Failed', message: err.message });
+      return false;
+    }
+  };
+
+  const handleDeleteRoom = async (id: string): Promise<boolean> => {
+    try {
+      try {
+        await apiService.deleteRoom(id);
+      } catch {
+        db.deleteRoom(id);
+      }
+      addToast({ type: 'success', title: 'Room Deleted', message: 'Room removed from the property.' });
+      await refreshAllData();
+      return true;
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Room Delete Failed', message: err.message });
+      return false;
+    }
+  };
+
+  const handleGetRoomStatusHistory = (roomId: string): RoomStatusHistoryEntry[] => {
+    return db.getRoomStatusHistory(roomId);
+  };
+
   return (
     <HotelContext.Provider
       value={{
@@ -677,6 +911,9 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         housekeepingTasks,
         maintenanceTickets,
         posProducts,
+        menuCategories,
+        menuItems,
+        roomStatusHistory,
         consumptionLogs,
         isLoading,
         toasts,
@@ -729,6 +966,18 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setIsFolioModalOpen,
         folioModalBooking,
         openFolioModal,
+        // Menu Management modals
+        isMenuCategoryModalOpen,
+        setIsMenuCategoryModalOpen,
+        isMenuItemModalOpen,
+        setIsMenuItemModalOpen,
+        editingMenuItem,
+        setEditingMenuItem,
+        // Room Management modals
+        isRoomModalOpen,
+        setIsRoomModalOpen,
+        editingRoom,
+        setEditingRoom,
         refreshAllData,
         createBooking: handleCreateBooking,
         checkInGuest: handleCheckInGuest,
@@ -740,6 +989,18 @@ export const HotelProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         resolveMaintenanceTicket: handleResolveMaintenanceTicket,
         createPurchaseOrder: handleCreatePurchaseOrder,
         transitionPOStatus: handleTransitionPOStatus,
+        // Menu Management actions
+        createMenuCategory: handleCreateMenuCategory,
+        updateMenuCategory: handleUpdateMenuCategory,
+        deleteMenuCategory: handleDeleteMenuCategory,
+        createMenuItem: handleCreateMenuItem,
+        updateMenuItem: handleUpdateMenuItem,
+        deleteMenuItem: handleDeleteMenuItem,
+        // Room Management actions
+        createRoom: handleCreateRoom,
+        updateRoom: handleUpdateRoom,
+        deleteRoom: handleDeleteRoom,
+        getRoomStatusHistory: handleGetRoomStatusHistory,
         addToast,
         removeToast
       }}

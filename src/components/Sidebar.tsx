@@ -16,7 +16,9 @@ import {
   BarChart3,
   Settings,
   ChevronDown,
-  Building
+  Building,
+  UtensilsCrossed,
+  KeyRound
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
@@ -30,6 +32,8 @@ export const Sidebar: React.FC = () => {
     { id: 'HOUSEKEEPING', label: 'Housekeeping', icon: Sparkles },
     { id: 'INVENTORY', label: 'Inventory', icon: Package },
     { id: 'PURCHASING', label: 'Purchasing', icon: ShoppingCart },
+    { id: 'MENU', label: 'Menu Management', icon: UtensilsCrossed },
+    { id: 'ROOMS', label: 'Room Management', icon: KeyRound },
     { id: 'STAFF', label: 'Staff Management', icon: UserCheck },
     { id: 'FINANCE', label: 'Finance', icon: Banknote },
     { id: 'POS', label: 'Cashier / POS', icon: Store },
@@ -63,9 +67,12 @@ export const Sidebar: React.FC = () => {
               (item.id === 'POS' && activeTab === 'POS') ||
               (item.id === 'STAFF' && activeTab === 'STAFF') ||
               (item.id === 'INVENTORY' && activeTab === 'INVENTORY') ||
+              (item.id === 'PURCHASING' && activeTab === 'INVENTORY') ||
               (item.id === 'PMS_GRID' && activeTab === 'PMS_GRID') ||
               (item.id === 'HOUSEKEEPING' && activeTab === 'HOUSEKEEPING') ||
-              (item.id === 'REPORTS' && activeTab === 'BLUEPRINT');
+              (item.id === 'REPORTS' && activeTab === 'BLUEPRINT') ||
+              (item.id === 'MENU' && activeTab === 'MENU_MANAGEMENT') ||
+              (item.id === 'ROOMS' && activeTab === 'ROOM_MANAGEMENT');
 
             return (
               <button
@@ -79,6 +86,10 @@ export const Sidebar: React.FC = () => {
                     setActiveTab('PMS_GRID');
                   } else if (item.id === 'INVENTORY' || item.id === 'PURCHASING') {
                     setActiveTab('INVENTORY');
+                  } else if (item.id === 'MENU') {
+                    setActiveTab('MENU_MANAGEMENT');
+                  } else if (item.id === 'ROOMS') {
+                    setActiveTab('ROOM_MANAGEMENT');
                   } else if (item.id === 'HOUSEKEEPING') {
                     setActiveTab('HOUSEKEEPING');
                   } else if (item.id === 'REPORTS' || item.id === 'FINANCE') {

@@ -47,6 +47,41 @@ router.get('/', (req: Request, res: Response) => {
   }
 });
 
+// POST /api/rooms - Create a new room
+router.post('/', (req: Request, res: Response) => {
+  try {
+    const {
+      roomNumber,
+      floor,
+      category,
+      pricePerNight,
+      status,
+      maxOccupancy,
+      bedConfig,
+      amenities
+    } = req.body;
+
+    if (!roomNumber || floor === undefined || !category || pricePerNight === undefined || !status || maxOccupancy === undefined || !bedConfig) {
+      return res.status(400).json({ success: false, message: 'roomNumber, floor, category, pricePerNight, status, maxOccupancy, and bedConfig are required' });
+    }
+
+    const room = db.createRoom({
+      roomNumber,
+      floor: Number(floor),
+      category,
+      pricePerNight: Number(pricePerNight),
+      status,
+      maxOccupancy: Number(maxOccupancy),
+      bedConfig,
+      amenities: Array.isArray(amenities) ? amenities : []
+    });
+
+    res.status(201).json({ success: true, message: `Room ${room.roomNumber} created`, data: room });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 // GET /api/rooms/:id - Get specific room details
 router.get('/:id', (req: Request, res: Response) => {
   const room = db.rooms.get(req.params.id);
@@ -66,15 +101,62 @@ router.get('/:id', (req: Request, res: Response) => {
     }
   }
 
+  const statusHistory = db.getRoomStatusHistory(req.params.id);
+
   res.json({
     success: true,
     data: {
       ...room,
       booking,
       guest,
-      folio
+      folio,
+      statusHistory
     }
   });
+});
+
+// PUT /api/rooms/:id - Update room details (full replacement)
+router.put('/:id', (req: Request, res: Response) => {
+  try {
+    const { roomNumber, floor, category, pricePerNight, status, maxOccupancy, bedConfig, amenities } = req.body;
+
+    const updated = db.updateRoom(req.params.id, {
+      ...(roomNumber !== undefined && { roomNumber }),
+      ...(floor !== undefined && { floor: Number(floor) }),
+      ...(category !== undefined && { category }),
+      ...(pricePerNight !== undefined && { pricePerNight: Number(pricePerNight) }),
+      ...(status !== undefined && { status }),
+      ...(maxOccupancy !== undefined && { maxOccupancy: Number(maxOccupancy) }),
+      ...(bedConfig !== undefined && { bedConfig }),
+      ...(amenities !== undefined && { amenities })
+    });
+
+    res.json({ success: true, message: `Room ${updated.roomNumber} updated`, data: updated });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// PATCH /api/rooms/:id - Partial update room details
+router.patch('/:id', (req: Request, res: Response) => {
+  try {
+    const { roomNumber, floor, category, pricePerNight, status, maxOccupancy, bedConfig, amenities } = req.body;
+
+    const updated = db.updateRoom(req.params.id, {
+      ...(roomNumber !== undefined && { roomNumber }),
+      ...(floor !== undefined && { floor: Number(floor) }),
+      ...(category !== undefined && { category }),
+      ...(pricePerNight !== undefined && { pricePerNight: Number(pricePerNight) }),
+      ...(status !== undefined && { status }),
+      ...(maxOccupancy !== undefined && { maxOccupancy: Number(maxOccupancy) }),
+      ...(bedConfig !== undefined && { bedConfig }),
+      ...(amenities !== undefined && { amenities })
+    });
+
+    res.json({ success: true, message: `Room ${updated.roomNumber} updated`, data: updated });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
 });
 
 // PATCH /api/rooms/:id/status - Update room operational status
@@ -86,8 +168,28 @@ router.patch('/:id/status', (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Room not found' });
     }
 
-    room.status = status;
-    res.json({ success: true, message: `Room ${room.roomNumber} status set to ${status}`, data: room });
+    const updated = db.updateRoom(req.params.id, { status });
+    res.json({ success: true, message: `Room ${updated.roomNumber} status set to ${status}`, data: updated });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// DELETE /api/rooms/:id - Delete a room (blocked if occupied or has active booking)
+router.delete('/:id', (req: Request, res: Response) => {
+  try {
+    db.deleteRoom(req.params.id);
+    res.json({ success: true, message: 'Room deleted' });
+  } catch (error: any) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+// GET /api/rooms/:id/status-history - Get room status change history
+router.get('/:id/status-history', (req: Request, res: Response) => {
+  try {
+    const history = db.getRoomStatusHistory(req.params.id);
+    res.json({ success: true, count: history.length, data: history });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

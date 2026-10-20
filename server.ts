@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import roomsRouter from './src/server/routes/rooms.ts';
 import bookingsRouter from './src/server/routes/bookings.ts';
 import inventoryRouter from './src/server/routes/inventory.ts';
+import menuRouter from './src/server/routes/menu.ts';
 import posRouter from './src/server/routes/pos.ts';
 import housekeepingRouter from './src/server/routes/housekeeping.ts';
 import { PRISMA_SCHEMA_CONTENT } from './src/schema/prisma.schema.ts';
@@ -33,6 +34,7 @@ async function startServer() {
   app.use('/api/rooms', roomsRouter);
   app.use('/api/bookings', bookingsRouter);
   app.use('/api/inventory', inventoryRouter);
+  app.use('/api/menu', menuRouter);
   app.use('/api/pos', posRouter);
   app.use('/api/housekeeping', housekeepingRouter);
 

@@ -290,6 +290,67 @@ export interface PosOrderRequest {
   serverName: string;
 }
 
+// ---------------- MENU MANAGEMENT TYPES ----------------
+
+export type MenuCategory = 'BREAKFAST' | 'LUNCH' | 'DINNER' | 'BEVERAGES' | 'DESSERTS' | 'MINIBAR' | 'SPA' | 'ROOM_SERVICE';
+
+export interface MenuCategoryItem {
+  id: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  itemCount: number;
+}
+
+export interface MenuItem {
+  id: string;
+  category: MenuCategory;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  isAvailable: boolean;
+  isFeatured: boolean;
+  imageUrl?: string;
+  linkedInventorySku?: string;
+  inventoryDeductionQty?: number;
+  preparationTimeMinutes?: number;
+  allergens?: string[];
+  tags?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------------- ROOM MANAGEMENT CRUD TYPES ----------------
+
+export type CreateRoomInput = {
+  roomNumber: string;
+  floor: number;
+  category: RoomCategory;
+  pricePerNight: number;
+  status: RoomStatus;
+  maxOccupancy: number;
+  bedConfig: string;
+  amenities: string[];
+};
+
+export type UpdateRoomInput = {
+  id?: string;
+} & Partial<CreateRoomInput>;
+
+export type RoomStatusHistoryEntry = {
+  id: string;
+  roomId: string;
+  fromStatus: RoomStatus | null;
+  toStatus: RoomStatus;
+  changedBy: string;
+  changedAt: string;
+  reason?: string;
+};
+
 // ---------------- STAFF MANAGEMENT TYPES ----------------
 
 export type StaffDepartment =

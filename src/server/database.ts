@@ -15,7 +15,13 @@ import {
   HousekeepingTask,
   MaintenanceTicket,
   PosProduct,
-  WarehouseLocationId
+  WarehouseLocationId,
+  MenuCategoryItem,
+  MenuItem,
+  MenuCategory,
+  CreateRoomInput,
+  UpdateRoomInput,
+  RoomStatusHistoryEntry
 } from '../types/index.ts';
 import { getGuestProfileEnrichment } from '../data/guestData.ts';
 
@@ -31,6 +37,9 @@ export class HotelDatabase {
   housekeepingTasks: Map<string, HousekeepingTask> = new Map();
   maintenanceTickets: Map<string, MaintenanceTicket> = new Map();
   posProducts: PosProduct[] = [];
+  menuCategories: Map<string, MenuCategoryItem> = new Map();
+  menuItems: Map<string, MenuItem> = new Map();
+  roomStatusHistory: RoomStatusHistoryEntry[] = [];
   inventoryConsumptionLogs: Array<{
     id: string;
     itemId: string;
@@ -301,6 +310,45 @@ export class HotelDatabase {
       }
     ];
     items.forEach(i => this.inventoryItems.set(i.id, i));
+
+    // 2b. Menu Categories & Menu Items (Menu Management Module)
+    const menuCategoriesSeed: MenuCategoryItem[] = [
+      { id: 'cat-breakfast', name: 'Breakfast', description: 'Morning à la carte and buffet selections', isActive: true, sortOrder: 1, itemCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'cat-lunch', name: 'Lunch', description: 'Midday entrées and light plates', isActive: true, sortOrder: 2, itemCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'cat-dinner', name: 'Dinner', description: 'Evening fine dining entrées', isActive: true, sortOrder: 3, itemCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'cat-beverages', name: 'Beverages', description: 'Coffee, tea, juices, soft drinks & cocktails', isActive: true, sortOrder: 4, itemCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'cat-desserts', name: 'Desserts', description: 'Sweet finishes and pastries', isActive: true, sortOrder: 5, itemCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'cat-minibar', name: 'Minibar', description: 'In-room snacks and beverages', isActive: true, sortOrder: 6, itemCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'cat-spa', name: 'Spa & Wellness', description: 'Spa treatments and wellness add-ons', isActive: true, sortOrder: 7, itemCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'cat-room-service', name: 'Room Service', description: '24-hour in-room dining', isActive: true, sortOrder: 8, itemCount: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    ];
+    menuCategoriesSeed.forEach(c => this.menuCategories.set(c.id, c));
+
+    const menuItemsSeed: MenuItem[] = [
+      { id: 'menu-1', category: 'BREAKFAST', name: 'Eggs Benedict', description: 'Poached eggs, hollandaise sauce on English muffin', price: 44.00, currency: 'AED', isAvailable: true, isFeatured: true, imageUrl: 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?w=400&auto=format&fit=crop&q=80', linkedInventorySku: 'FB-001', inventoryDeductionQty: 1, preparationTimeMinutes: 15, allergens: ['EGG', 'GLUTEN', 'DAIRY'], tags: ["Chef's Special"], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-2', category: 'BREAKFAST', name: 'Fresh Fruit Platter', description: 'Seasonal fresh fruits', price: 30.00, currency: 'AED', isAvailable: true, isFeatured: false, imageUrl: 'https://images.unsplash.com/photo-1519996529931-28324d5a630e?w=400&auto=format&fit=crop&q=80', linkedInventorySku: 'FB-002', inventoryDeductionQty: 1, preparationTimeMinutes: 10, allergens: [], tags: ['Vegetarian'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-3', category: 'LUNCH', name: 'Classic Burger', description: 'Beef patty, lettuce, tomato, cheddar cheese, fries', price: 48.00, currency: 'AED', isAvailable: true, isFeatured: true, imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&auto=format&fit=crop&q=80', linkedInventorySku: 'FB-001', inventoryDeductionQty: 1, preparationTimeMinutes: 20, allergens: ['GLUTEN', 'DAIRY'], tags: ["Chef's Special"], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-4', category: 'LUNCH', name: 'Caesar Salad', description: 'Romaine lettuce, parmesan, croutons, caesar dressing', price: 38.00, currency: 'AED', isAvailable: true, isFeatured: false, imageUrl: 'https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=400&auto=format&fit=crop&q=80', linkedInventorySku: 'FB-002', inventoryDeductionQty: 1, preparationTimeMinutes: 12, allergens: ['GLUTEN', 'DAIRY', 'EGG'], tags: ['Vegetarian'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-5', category: 'DINNER', name: 'Grilled Salmon', description: 'Served with seasonal vegetables and lemon butter sauce', price: 75.00, currency: 'AED', isAvailable: true, isFeatured: true, imageUrl: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&auto=format&fit=crop&q=80', linkedInventorySku: 'FB-001', inventoryDeductionQty: 1, preparationTimeMinutes: 25, allergens: ['FISH', 'DAIRY'], tags: ["Chef's Special"], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-6', category: 'DINNER', name: 'Beef Steak', description: 'Ribeye steak with mashed potato and grilled vegetables', price: 95.00, currency: 'AED', isAvailable: true, isFeatured: true, imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&auto=format&fit=crop&q=80', linkedInventorySku: 'FB-001', inventoryDeductionQty: 1, preparationTimeMinutes: 30, allergens: ['DAIRY'], tags: ["Chef's Special"], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-7', category: 'BEVERAGES', name: 'Fresh Orange Juice', description: 'Freshly squeezed Valencia oranges', price: 12.00, currency: 'AED', isAvailable: true, isFeatured: false, imageUrl: 'https://images.unsplash.com/photo-1613478223719-2ab802602423?w=400&auto=format&fit=crop&q=80', linkedInventorySku: 'FB-002', inventoryDeductionQty: 1, preparationTimeMinutes: 5, allergens: [], tags: ['Vegetarian'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-8', category: 'BEVERAGES', name: 'Espresso Double', description: 'Single origin Colombian dark roast', price: 16.00, currency: 'AED', isAvailable: true, isFeatured: false, imageUrl: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&auto=format&fit=crop&q=80', preparationTimeMinutes: 4, allergens: [], tags: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-9', category: 'DESSERTS', name: 'Chocolate Lava Cake', description: 'Warm chocolate cake with vanilla ice cream', price: 32.00, currency: 'AED', isAvailable: true, isFeatured: true, imageUrl: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=400&auto=format&fit=crop&q=80', linkedInventorySku: 'FB-001', inventoryDeductionQty: 1, preparationTimeMinutes: 18, allergens: ['EGG', 'GLUTEN', 'DAIRY'], tags: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-10', category: 'MINIBAR', name: 'Potato Chips', description: 'Sea salted premium potato chips', price: 10.00, currency: 'AED', isAvailable: true, isFeatured: false, preparationTimeMinutes: 1, allergens: [], tags: ['Vegetarian'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-11', category: 'MINIBAR', name: 'Sparkling Water', description: '330ml sparkling mineral water', price: 8.00, currency: 'AED', isAvailable: true, isFeatured: false, preparationTimeMinutes: 1, allergens: [], tags: ['Vegetarian'], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-12', category: 'SPA', name: 'Swedish Massage (60 min)', description: 'Full body relaxation massage', price: 250.00, currency: 'AED', isAvailable: true, isFeatured: true, preparationTimeMinutes: 60, allergens: [], tags: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+      { id: 'menu-13', category: 'ROOM_SERVICE', name: 'Chicken Club Sandwich', description: 'Grilled chicken, bacon, lettuce, tomato, toasted sourdough', price: 42.00, currency: 'AED', isAvailable: true, isFeatured: false, linkedInventorySku: 'FB-001', inventoryDeductionQty: 1, preparationTimeMinutes: 15, allergens: ['GLUTEN', 'EGG'], tags: [], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
+    ];
+    menuItemsSeed.forEach(i => this.menuItems.set(i.id, i));
+
+    // Update category item counts
+    for (const cat of this.menuCategories.values()) {
+      let count = 0;
+      for (const item of this.menuItems.values()) {
+        if (item.category === cat.name.toUpperCase() as MenuCategory) count++;
+      }
+      cat.itemCount = count;
+    }
 
     // 3. Exact Floor 5 Rooms (501 through 524) as seen in the Image:
     const floor5RoomsData: Array<{
@@ -597,6 +645,191 @@ export class HotelDatabase {
     if (!po) throw new Error('PO not found');
     po.status = nextStatus;
     return po;
+  }
+
+  // ---------------- ROOM MANAGEMENT CRUD ----------------
+
+  createRoom(input: CreateRoomInput): Room {
+    const existing = Array.from(this.rooms.values()).find(r => r.roomNumber === input.roomNumber);
+    if (existing) {
+      throw new Error(`Room ${input.roomNumber} already exists.`);
+    }
+
+    const id = `rm-${input.roomNumber}`;
+    const now = new Date().toISOString();
+    const room: Room = {
+      id,
+      roomNumber: input.roomNumber,
+      floor: input.floor,
+      category: input.category,
+      pricePerNight: input.pricePerNight,
+      status: input.status,
+      maxOccupancy: input.maxOccupancy,
+      bedConfig: input.bedConfig,
+      amenities: input.amenities,
+      currentBookingId: null,
+      cleaningStatus: 'CLEAN',
+      activeMaintenanceTicketId: null
+    };
+
+    this.rooms.set(id, room);
+    return room;
+  }
+
+  updateRoom(id: string, input: UpdateRoomInput): Room {
+    const room = this.rooms.get(id);
+    if (!room) {
+      throw new Error('Room not found');
+    }
+
+    const prevStatus = room.status;
+    const updated: Room = { ...room, ...input };
+    this.rooms.set(id, updated);
+
+    // Record status change history
+    if (input.status && input.status !== prevStatus) {
+      this.roomStatusHistory.push({
+        id: `rh-${Date.now()}`,
+        roomId: id,
+        fromStatus: prevStatus,
+        toStatus: input.status,
+        changedBy: 'SYSTEM',
+        changedAt: new Date().toISOString()
+      });
+    }
+
+    return updated;
+  }
+
+  deleteRoom(id: string): void {
+    const room = this.rooms.get(id);
+    if (!room) {
+      throw new Error('Room not found');
+    }
+
+    if (room.status === 'OCCUPIED' || room.currentBookingId) {
+      throw new Error(`Cannot delete room ${room.roomNumber} while it is occupied or has an active booking.`);
+    }
+
+    this.rooms.delete(id);
+  }
+
+  getRoomStatusHistory(roomId: string): RoomStatusHistoryEntry[] {
+    return this.roomStatusHistory.filter(h => h.roomId === roomId).sort((a, b) =>
+      new Date(b.changedAt).getTime() - new Date(a.changedAt).getTime()
+    );
+  }
+
+  // ---------------- MENU CATEGORY CRUD ----------------
+
+  getMenuCategories(): MenuCategoryItem[] {
+    return Array.from(this.menuCategories.values()).sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
+  createMenuCategory(input: { name: string; description?: string; isActive?: boolean; sortOrder?: number }): MenuCategoryItem {
+    const existing = Array.from(this.menuCategories.values()).find(c => c.name.toLowerCase() === input.name.toLowerCase());
+    if (existing) {
+      throw new Error(`Menu category '${input.name}' already exists.`);
+    }
+
+    const id = `cat-${input.name.toLowerCase().replace(/\s+/g, '-')}`;
+    const now = new Date().toISOString();
+    const category: MenuCategoryItem = {
+      id,
+      name: input.name,
+      description: input.description || '',
+      isActive: input.isActive !== false,
+      sortOrder: input.sortOrder ?? this.menuCategories.size + 1,
+      itemCount: 0,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    this.menuCategories.set(id, category);
+    return category;
+  }
+
+  updateMenuCategory(id: string, input: Partial<Pick<MenuCategoryItem, 'name' | 'description' | 'isActive' | 'sortOrder'>>): MenuCategoryItem {
+    const cat = this.menuCategories.get(id);
+    if (!cat) {
+      throw new Error('Menu category not found');
+    }
+
+    const updated: MenuCategoryItem = { ...cat, ...input, updatedAt: new Date().toISOString() };
+    this.menuCategories.set(id, updated);
+    return updated;
+  }
+
+  deleteMenuCategory(id: string): void {
+    const cat = this.menuCategories.get(id);
+    if (!cat) {
+      throw new Error('Menu category not found');
+    }
+
+    const hasItems = Array.from(this.menuItems.values()).some(i => i.category === cat.name.toUpperCase() as MenuCategory);
+    if (hasItems) {
+      throw new Error(`Cannot delete category '${cat.name}' while it contains menu items.`);
+    }
+
+    this.menuCategories.delete(id);
+  }
+
+  // ---------------- MENU ITEM CRUD ----------------
+
+  getMenuItems(params?: { category?: MenuCategory; availableOnly?: boolean }): MenuItem[] {
+    let items = Array.from(this.menuItems.values());
+
+    if (params?.category) {
+      items = items.filter(i => i.category === params.category);
+    }
+    if (params?.availableOnly) {
+      items = items.filter(i => i.isAvailable);
+    }
+
+    return items.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  createMenuItem(input: Omit<MenuItem, 'id' | 'createdAt' | 'updatedAt'>): MenuItem {
+    const id = `menu-${Date.now()}`;
+    const now = new Date().toISOString();
+    const item: MenuItem = { ...input, id, createdAt: now, updatedAt: now };
+
+    this.menuItems.set(id, item);
+    this._refreshCategoryCounts();
+    return item;
+  }
+
+  updateMenuItem(id: string, input: Partial<Omit<MenuItem, 'id' | 'createdAt' | 'updatedAt'>>): MenuItem {
+    const item = this.menuItems.get(id);
+    if (!item) {
+      throw new Error('Menu item not found');
+    }
+
+    const updated: MenuItem = { ...item, ...input, updatedAt: new Date().toISOString() };
+    this.menuItems.set(id, updated);
+    this._refreshCategoryCounts();
+    return updated;
+  }
+
+  deleteMenuItem(id: string): void {
+    const item = this.menuItems.get(id);
+    if (!item) {
+      throw new Error('Menu item not found');
+    }
+
+    this.menuItems.delete(id);
+    this._refreshCategoryCounts();
+  }
+
+  _refreshCategoryCounts(): void {
+    for (const cat of this.menuCategories.values()) {
+      let count = 0;
+      for (const item of this.menuItems.values()) {
+        if (item.category === cat.name.toUpperCase() as MenuCategory) count++;
+      }
+      cat.itemCount = count;
+      cat.updatedAt = new Date().toISOString();
+    }
   }
 }
 

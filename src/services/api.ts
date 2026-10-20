@@ -14,7 +14,12 @@ import {
   HousekeepingTask,
   MaintenanceTicket,
   PosProduct,
-  WarehouseLocationId
+  WarehouseLocationId,
+  MenuCategoryItem,
+  MenuItem,
+  CreateRoomInput,
+  UpdateRoomInput,
+  RoomStatusHistoryEntry
 } from '../types/index.ts';
 
 async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -179,6 +184,85 @@ export const apiService = {
       method: 'POST',
       body: JSON.stringify(data)
     });
+  },
+
+  // ---------------- MENU MANAGEMENT ----------------
+
+  getMenuCategories: async (): Promise<MenuCategoryItem[]> => {
+    return request<MenuCategoryItem[]>(`/api/menu/categories`);
+  },
+
+  createMenuCategory: async (data: { name: string; description?: string; isActive?: boolean; sortOrder?: number }) => {
+    return request<MenuCategoryItem>(`/api/menu/categories`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  updateMenuCategory: async (id: string, data: Partial<Pick<MenuCategoryItem, 'name' | 'description' | 'isActive' | 'sortOrder'>>) => {
+    return request<MenuCategoryItem>(`/api/menu/categories/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
+
+  deleteMenuCategory: async (id: string) => {
+    return request<void>(`/api/menu/categories/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  getMenuItems: async (params?: { category?: string; availableOnly?: boolean }): Promise<MenuItem[]> => {
+    const searchParams = new URLSearchParams();
+    if (params?.category) searchParams.set('category', params.category);
+    if (params?.availableOnly) searchParams.set('availableOnly', 'true');
+    return request<MenuItem[]>(`/api/menu/items?${searchParams.toString()}`);
+  },
+
+  createMenuItem: async (data: Omit<MenuItem, 'id' | 'createdAt' | 'updatedAt'>) => {
+    return request<MenuItem>(`/api/menu/items`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  updateMenuItem: async (id: string, data: Partial<Omit<MenuItem, 'id' | 'createdAt' | 'updatedAt'>>) => {
+    return request<MenuItem>(`/api/menu/items/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
+
+  deleteMenuItem: async (id: string) => {
+    return request<void>(`/api/menu/items/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  // ---------------- ROOM MANAGEMENT CRUD ----------------
+
+  createRoom: async (data: CreateRoomInput) => {
+    return request<Room>(`/api/rooms`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  updateRoom: async (id: string, data: UpdateRoomInput) => {
+    return request<Room>(`/api/rooms/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  },
+
+  deleteRoom: async (id: string) => {
+    return request<void>(`/api/rooms/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
+  getRoomStatusHistory: async (roomId: string): Promise<RoomStatusHistoryEntry[]> => {
+    return request<RoomStatusHistoryEntry[]>(`/api/rooms/${roomId}/status-history`);
   },
 
   // Housekeeping & Maintenance

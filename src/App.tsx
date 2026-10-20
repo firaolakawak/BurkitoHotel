@@ -25,6 +25,8 @@ import { HousekeepingBoard } from './components/housekeeping/HousekeepingBoard.t
 import { MaintenanceModal } from './components/housekeeping/MaintenanceModal.tsx';
 import { FolioInvoiceModal } from './components/billing/FolioInvoiceModal.tsx';
 import { ArchitectureViewer } from './components/blueprint/ArchitectureViewerModal.tsx';
+import { MenuManagement } from './components/menu/MenuManagement.tsx';
+import { RoomManagement } from './components/room/RoomManagement.tsx';
 import { ToastContainer } from './components/ToastContainer.tsx';
 
 const MainLayout: React.FC = () => {
@@ -53,6 +55,26 @@ const MainLayout: React.FC = () => {
           <div className="flex-1 p-5 sm:p-6 space-y-6 overflow-y-auto min-w-0">
             {activeTab === 'STAFF' && (
               <StaffManagement />
+            )}
+
+            {activeTab === 'MENU_MANAGEMENT' && (
+              <div className="space-y-4">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-900">Menu Management</h1>
+                  <p className="text-xs text-slate-500 mt-0.5">Food & beverage categories, items, pricing, and availability</p>
+                </div>
+                <MenuManagement />
+              </div>
+            )}
+
+            {activeTab === 'ROOM_MANAGEMENT' && (
+              <div className="space-y-4">
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-slate-900">Room Management</h1>
+                  <p className="text-xs text-slate-500 mt-0.5">Create, update, and manage room details across all floors</p>
+                </div>
+                <RoomManagement />
+              </div>
             )}
 
             {activeTab === 'PMS_GRID' && (
